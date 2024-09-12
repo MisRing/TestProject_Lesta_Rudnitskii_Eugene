@@ -2,35 +2,39 @@ using UnityEngine;
 
 public class ThirdPersonCamera : MonoBehaviour
 {
-    public Transform target; // Цель, за которой следует камера (персонаж)
-    public Transform player;
-    public float distance = 5.0f; // Расстояние от камеры до персонажа
-    public float height = 2.0f; // Высота, на которой находится камера
-    public float smoothSpeed = 0.125f; // Скорость сглаживания камеры при следовании
-    public Vector3 offset; // Смещение для настройки позиции камеры
+    public Transform player;         
+    public float distance = 5f;     
+    public float heightOffset = 1f;  
+    public float rotationSpeed = 100f;
 
-    public float rotationSpeed = 100f; // Скорость вращения камеры вокруг персонажа
+    public float minYAngle = -40f;     
+    public float maxYAngle = 60f;     
 
-    private void Start()
+    private float currentYRotation = 0f;    
+    private float currentXRotation = 0f;    
+
+    void Start()
     {
-        offset = new Vector3(0, height, -distance); // Устанавливаем начальное смещение
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     void LateUpdate()
     {
-       // target.position = player.position;
-        // Вращение камеры вокруг персонажа по оси Y с помощью мыши
-        float horizontal = Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-        target.Rotate(0, horizontal, 0);
+        float horizontalInput = Input.GetAxis("Mouse X");
+        float verticalInput = Input.GetAxis("Mouse Y");
 
-        // Смещение камеры относительно позиции персонажа
-        Vector3 desiredPosition = target.position + target.TransformDirection(offset);
+        currentXRotation += horizontalInput * rotationSpeed * Time.deltaTime;
+        currentYRotation -= verticalInput * rotationSpeed * Time.deltaTime;
 
-        // Плавное движение камеры
-        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
-        transform.position = smoothedPosition;
+        currentYRotation = Mathf.Clamp(currentYRotation, minYAngle, maxYAngle);
 
-        // Всегда смотрим на персонажа
-        transform.LookAt(target.position + Vector3.up * height / 2);
+        Quaternion cameraRotation = Quaternion.Euler(currentYRotation, currentXRotation, 0);
+
+        Vector3 cameraPosition = player.position - cameraRotation * Vector3.forward * distance + Vector3.up * heightOffset;
+
+        transform.position = cameraPosition;
+
+        transform.LookAt(player.position + Vector3.up * heightOffset);
     }
 }

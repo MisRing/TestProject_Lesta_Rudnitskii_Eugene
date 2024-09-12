@@ -4,7 +4,7 @@ public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float jumpForce = 5f;
-    public Transform cameraTransform; // Ссылка на камеру
+    public Transform cameraTransform;
 
     private Rigidbody rb;
     [SerializeField]
@@ -26,15 +26,12 @@ public class PlayerController : MonoBehaviour
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
 
-        // Получаем направление движения относительно камеры
         Vector3 moveDirection = (cameraTransform.forward * vertical + cameraTransform.right * horizontal).normalized;
-        moveDirection.y = 0; // Движение только по горизонтали
+        moveDirection.y = 0;
 
-        // Плавное перемещение игрока
         Vector3 targetPosition = transform.position + moveDirection * moveSpeed * Time.deltaTime;
         rb.MovePosition(targetPosition);
 
-        // Поворот игрока в направлении движения
         if (moveDirection != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
