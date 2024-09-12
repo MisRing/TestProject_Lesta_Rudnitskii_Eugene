@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
@@ -14,6 +15,8 @@ public class UIController : MonoBehaviour
     private Text healthText;
     [SerializeField]
     private Text timerText;
+    [SerializeField]
+    private GameObject DeathPanel;
 
     [SerializeField]
     private float seconds;
@@ -33,6 +36,21 @@ public class UIController : MonoBehaviour
         StopAllCoroutines();
     }
 
+
+    public void PlayerLost()
+    {
+        EndRun();
+        DeathPanel.SetActive(true);
+        PlayerController.instance.enabled = false;
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    public void Restart()
+    {
+        SceneManager.LoadScene("test level");
+    }
 
     public void ChangeHealthBar(int currentHealth, int maxHealth)
     {

@@ -24,6 +24,12 @@ public class ThirdPersonCamera : MonoBehaviour
         float horizontalInput = Input.GetAxis("Mouse X");
         float verticalInput = Input.GetAxis("Mouse Y");
 
+        if(PlayerController.instance.enabled == false)
+        {
+            horizontalInput = 0f;
+            verticalInput = 0f;
+        }
+
         currentXRotation += horizontalInput * rotationSpeed * Time.deltaTime;
         currentYRotation -= verticalInput * rotationSpeed * Time.deltaTime;
 

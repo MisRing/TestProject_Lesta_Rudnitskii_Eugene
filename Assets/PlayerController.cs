@@ -60,6 +60,9 @@ public class PlayerController : MonoBehaviour
         currentHealth = currentHealth < 0 ? 0 : currentHealth;
 
         UIController.instance.ChangeHealthBar(currentHealth, maxHealth);
+
+        if (currentHealth == 0)
+            UIController.instance.PlayerLost();
     }
 
     void Jump()
