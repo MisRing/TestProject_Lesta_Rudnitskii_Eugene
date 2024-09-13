@@ -42,6 +42,7 @@ public class UIController : MonoBehaviour
         EndRun();
         DeathPanel.SetActive(true);
         PlayerController.instance.enabled = false;
+        ThirdPersonCamera.instance.canRotate = false;
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;

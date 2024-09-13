@@ -18,6 +18,8 @@ public class ThirdPersonCamera : MonoBehaviour
 	private float lookAngle;
 	private float tiltAngle;
 
+	public bool canRotate = true;
+
     void Awake()
     {
         instance = this;
@@ -31,8 +33,9 @@ public class ThirdPersonCamera : MonoBehaviour
 		float inputX = Input.GetAxis("Mouse X");
 		float inputY = Input.GetAxis("Mouse Y");
 
-		FollowTarget(); 
-		HandleRotations(inputX, inputY, cameraSpeed);
+		FollowTarget();
+		if(canRotate)
+			HandleRotations(inputX, inputY, cameraSpeed);
 	}
 
 	void FollowTarget()
