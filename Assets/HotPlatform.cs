@@ -1,58 +1,59 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class HotPlatform : MonoBehaviour
 {
     [SerializeField]
-    private float damageDuration = 0.3f;
+    private float loadTime = 1f;
     [SerializeField]
-    private float loadSpeed = 1.25f;
+    private float reLoadTime = 5f;
     [SerializeField]
-    private int damage = 1;
+    private int damage = 2;
+    [SerializeField]
+    private Color loadingColor = Color.yellow;
+    [SerializeField]
+    private Color damageColor = Color.red;
 
-    private float timer = 0f;
     private bool loading = false;
-    private bool heated = false;
 
-    private void Update()
-    {
-        timer -= Time.deltaTime;
-    }
-    private void OnCollisionEnter(Collision collision)
+    private void OnCollisionStay(Collision collision)
     {
         if (collision.gameObject.tag != "Player" || loading)
             return;
 
-        StartCoroutine(StartDamage());
-    }
-    private void OnCollisionStay(Collision collision)
-    {
-        if (collision.gameObject.tag != "Player" || !heated)
-            return;
-
-        if(timer <= 0f)
-        {
-            timer = damageDuration;
-
-            collision.gameObject.GetComponent<PlayerController>().TakeDamage(damage);
-        }
-
+        StartCoroutine(LoadTrap());
     }
 
-    private IEnumerator StartDamage()
+    private IEnumerator LoadTrap()
     {
         loading = true;
         Renderer renderer = gameObject.GetComponent<Renderer>();
         Color startColor = renderer.material.color;
 
-        for(float i = 0; i < loadSpeed; i += Time.deltaTime)
+        for(float i = 0; i < loadTime; i += Time.deltaTime)
         {
-            renderer.material.color = Color.Lerp(startColor, Color.red, i);
+            renderer.material.color = Color.Lerp(startColor, loadingColor, i / loadTime);
             yield return null;
         }
 
-        renderer.material.color = Color.red;
-        heated = true;
+        renderer.material.color = damageColor;
+
+        Collider[] colliders = Physics.OverlapBox(transform.position, transform.localScale * 1.1f, quaternion.identity);
+        foreach(Collider hit in colliders)
+        {
+            if(hit.gameObject.tag == "Player")
+                hit.GetComponent<PlayerController>().TakeDamage(damage);
+        }
+
+        for (float i = 0; i < reLoadTime; i += Time.deltaTime)
+        {
+            renderer.material.color = Color.Lerp(damageColor, startColor, i / reLoadTime);
+            yield return null;
+        }
+
+        renderer.material.color = startColor;
+        loading = false;
     }
 }
