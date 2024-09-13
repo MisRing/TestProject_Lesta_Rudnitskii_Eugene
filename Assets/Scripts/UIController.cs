@@ -19,7 +19,7 @@ public class UIController : MonoBehaviour
     private GameObject deathPanel, winPanel;
 
     [SerializeField]
-    private float seconds;
+    private float seconds = 0;
 
     private void Awake()
     {
@@ -28,15 +28,21 @@ public class UIController : MonoBehaviour
 
     public void StartRun()
     {
+        if (seconds != 0)
+            return;
+
+        ThirdPersonCamera.instance.GetComponent<AudioSource>().enabled = true;
         StartCoroutine(Timer());
     }
 
     public void EndRun()
     {
+        ThirdPersonCamera.instance.GetComponent<AudioSource>().enabled = false;
         StopAllCoroutines();
 
         winPanel.SetActive(true);
         PlayerController.instance.enabled = false;
+        PlayerController.instance.GetComponent<Rigidbody>().velocity = Vector3.zero;
         ThirdPersonCamera.instance.canRotate = false;
 
         Cursor.visible = true;
@@ -48,9 +54,11 @@ public class UIController : MonoBehaviour
 
     public void PlayerLost()
     {
+        ThirdPersonCamera.instance.GetComponent<AudioSource>().enabled = false;
         StopAllCoroutines();
         deathPanel.SetActive(true);
         PlayerController.instance.enabled = false;
+        PlayerController.instance.GetComponent<Rigidbody>().velocity = Vector3.zero;
         ThirdPersonCamera.instance.canRotate = false;
 
         Cursor.visible = true;
@@ -83,6 +91,5 @@ public class UIController : MonoBehaviour
 
             timerText.text = sec + ":" + msec;
         }
-        
     }
 }

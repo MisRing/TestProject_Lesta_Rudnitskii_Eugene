@@ -26,12 +26,6 @@ public class PlayerController : MonoBehaviour
 
 	private float distToGround;
 
-	private bool canMove = true;
-	private bool isStuned = false;
-	private bool wasStuned = false;
-	private float pushForce;
-	private Vector3 pushDir;
-
 	private void Awake()
 	{
 		instance = this;
@@ -64,65 +58,61 @@ public class PlayerController : MonoBehaviour
 
         UIController.instance.ChangeHealthBar(currentHealth, maxHealth);
 
+		GetComponent<AudioSource>().Play();
+
         if (currentHealth == 0)
             UIController.instance.PlayerLost();
     }
 
-    void FixedUpdate ()
+	void FixedUpdate()
 	{
-		if (canMove)
+
+		if (moveDir.x != 0 || moveDir.z != 0)
 		{
-			if (moveDir.x != 0 || moveDir.z != 0)
-			{
-				Vector3 targetDir = moveDir;
-				targetDir.y = 0;
+			Vector3 targetDir = moveDir;
+			targetDir.y = 0;
 
-				if (targetDir == Vector3.zero)
-					targetDir = transform.forward;
-				Quaternion tr = Quaternion.LookRotation(targetDir); 
-				Quaternion targetRotation = Quaternion.Slerp(transform.rotation, tr, Time.deltaTime * rotateSpeed);
-				transform.rotation = targetRotation;
+			if (targetDir == Vector3.zero)
+				targetDir = transform.forward;
+			Quaternion tr = Quaternion.LookRotation(targetDir);
+			Quaternion targetRotation = Quaternion.Slerp(transform.rotation, tr, Time.deltaTime * rotateSpeed);
+			transform.rotation = targetRotation;
+		}
+
+		if (IsGrounded())
+		{
+			Vector3 targetVelocity = moveDir;
+			targetVelocity *= speed;
+
+			Vector3 velocity = rb.velocity;
+			if (targetVelocity.magnitude < velocity.magnitude)
+			{
+				targetVelocity = velocity;
+				rb.velocity /= 1.1f;
 			}
 
-			if (IsGrounded())
+			Vector3 velocityChange = (targetVelocity - velocity);
+			velocityChange.x = Mathf.Clamp(velocityChange.x, -maxVelocityChange, maxVelocityChange);
+			velocityChange.z = Mathf.Clamp(velocityChange.z, -maxVelocityChange, maxVelocityChange);
+			velocityChange.y = 0;
+			if (Mathf.Abs(rb.velocity.magnitude) < speed * 1.0f)
+				rb.AddForce(velocityChange, ForceMode.VelocityChange);
+
+			if (IsGrounded() && Input.GetButton("Jump"))
 			{
-				Vector3 targetVelocity = moveDir;
-				targetVelocity *= speed;
-
-				Vector3 velocity = rb.velocity;
-				if (targetVelocity.magnitude < velocity.magnitude)
-				{
-					targetVelocity = velocity;
-					rb.velocity /= 1.1f;
-				}
-
-				Vector3 velocityChange = (targetVelocity - velocity);
-				velocityChange.x = Mathf.Clamp(velocityChange.x, -maxVelocityChange, maxVelocityChange);
-				velocityChange.z = Mathf.Clamp(velocityChange.z, -maxVelocityChange, maxVelocityChange);
-				velocityChange.y = 0;
-                if (Mathf.Abs(rb.velocity.magnitude) < speed * 1.0f)
-					rb.AddForce(velocityChange, ForceMode.VelocityChange);
-
-                if (IsGrounded() && Input.GetButton("Jump"))
-				{
-					rb.velocity = new Vector3(velocity.x, Mathf.Sqrt(2 * jumpHeight * gravity), velocity.z);
-				}
+				rb.velocity = new Vector3(velocity.x, Mathf.Sqrt(2 * jumpHeight * gravity), velocity.z);
 			}
-			else
-			{
-                Vector3 targetVelocity = new Vector3(moveDir.x * airVelocity, rb.velocity.y, moveDir.z * airVelocity);
-                Vector3 velocity = rb.velocity;
-                Vector3 velocityChange = (targetVelocity - velocity);
-                velocityChange.x = Mathf.Clamp(velocityChange.x, -maxVelocityChange, maxVelocityChange);
-                velocityChange.z = Mathf.Clamp(velocityChange.z, -maxVelocityChange, maxVelocityChange);
-                rb.AddForce(velocityChange, ForceMode.Acceleration);
-                if (velocity.y < -maxFallSpeed)
-                    rb.velocity = new Vector3(velocity.x, -maxFallSpeed, velocity.z);
-            }
 		}
 		else
 		{
-			rb.velocity = pushDir * pushForce;
+			Vector3 targetVelocity = new Vector3(moveDir.x * airVelocity, rb.velocity.y, moveDir.z * airVelocity);
+			Vector3 velocity = rb.velocity;
+			Vector3 velocityChange = (targetVelocity - velocity);
+			velocityChange.x = Mathf.Clamp(velocityChange.x, -maxVelocityChange, maxVelocityChange);
+			velocityChange.z = Mathf.Clamp(velocityChange.z, -maxVelocityChange, maxVelocityChange);
+			rb.AddForce(velocityChange, ForceMode.Acceleration);
+			if (velocity.y < -maxFallSpeed)
+				rb.velocity = new Vector3(velocity.x, -maxFallSpeed, velocity.z);
 		}
 
 		rb.AddForce(new Vector3(0, -gravity * GetComponent<Rigidbody>().mass, 0), ForceMode.Acceleration);
@@ -137,43 +127,5 @@ public class PlayerController : MonoBehaviour
 		float inputY = Input.GetAxis("Vertical");
 
 		moveDir = (inputX * playerCamera.transform.right + inputY * playerCamera.transform.forward).normalized;
-	}
-
-	public void HitPlayer(Vector3 velocityF, float time)
-	{
-		rb.velocity = velocityF;
-
-		pushForce = velocityF.magnitude;
-		pushDir = Vector3.Normalize(velocityF);
-		StartCoroutine(Decrease(velocityF.magnitude, time));
-	}
-
-	private IEnumerator Decrease(float value, float duration)
-	{
-		if (isStuned)
-			wasStuned = true;
-		isStuned = true;
-		canMove = false;
-
-		float delta = 0;
-		delta = value / duration;
-
-		for (float t = 0; t < duration; t += Time.deltaTime)
-		{
-			yield return null;
-            pushForce = pushForce - Time.deltaTime * delta;
-            pushForce = pushForce < 0 ? 0 : pushForce;
-            rb.AddForce(new Vector3(0, -gravity * GetComponent<Rigidbody>().mass, 0)); //Add gravity
-		}
-
-		if (wasStuned)
-		{
-			wasStuned = false;
-		}
-		else
-		{
-			isStuned = false;
-			canMove = true;
-		}
 	}
 }
