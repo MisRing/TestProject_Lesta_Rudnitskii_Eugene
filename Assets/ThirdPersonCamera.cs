@@ -1,46 +1,60 @@
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class ThirdPersonCamera : MonoBehaviour
+public class ThirdPersonCamera : MonoBehaviour 
 {
-    public Transform player;         
-    public float distance = 5f;     
-    public float heightOffset = 1f;  
-    public float rotationSpeed = 100f;
+	public static ThirdPersonCamera instance;
 
-    public float minYAngle = -40f;     
-    public float maxYAngle = 60f;     
+	public float followSpeed = 3;
+	public float cameraSpeed = 2;
 
-    private float currentYRotation = 0f;    
-    private float currentXRotation = 0f;    
+	public Transform target;
 
-    void Start()
+	float turnSmoothing = 0.1f;
+	public float minAngle = -35;
+	public float maxAngle = 35;
+
+	private float lookAngle;
+	private float tiltAngle;
+
+    void Awake()
     {
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        instance = this;
+
+		Cursor.lockState = CursorLockMode.Locked;
+		Cursor.visible = false;
+    }
+	
+	private void FixedUpdate()
+	{
+		float inputX = Input.GetAxis("Mouse X");
+		float inputY = Input.GetAxis("Mouse Y");
+
+		FollowTarget(); 
+		HandleRotations(inputX, inputY, cameraSpeed);
+	}
+
+	void FollowTarget()
+	{
+        transform.position = Vector3.Lerp(transform.position, target.position, followSpeed * Time.deltaTime);
     }
 
-    void LateUpdate()
-    {
-        float horizontalInput = Input.GetAxis("Mouse X");
-        float verticalInput = Input.GetAxis("Mouse Y");
+    private float smoothX = 0f;
+    private float smoothY = 0f;
+    private float smoothXvelocity = 0f;
+    private float smoothYvelocity = 0f;
 
-        if(PlayerController.instance.enabled == false)
-        {
-            horizontalInput = 0f;
-            verticalInput = 0f;
-        }
+    void HandleRotations(float inputX, float inputY, float targetSpeed)
+	{
+        smoothX = Mathf.SmoothDamp(smoothX, inputX, ref smoothXvelocity, turnSmoothing);
+        smoothY = Mathf.SmoothDamp(smoothY, inputY, ref smoothYvelocity, turnSmoothing);
 
-        currentXRotation += horizontalInput * rotationSpeed * Time.deltaTime;
-        currentYRotation -= verticalInput * rotationSpeed * Time.deltaTime;
+        tiltAngle -= smoothY * targetSpeed;
+		tiltAngle = Mathf.Clamp(tiltAngle, minAngle, maxAngle);
+        Camera.main.transform.parent.localRotation = Quaternion.Euler(tiltAngle, 0, 0);
 
-        currentYRotation = Mathf.Clamp(currentYRotation, minYAngle, maxYAngle);
-
-        Quaternion cameraRotation = Quaternion.Euler(currentYRotation, currentXRotation, 0);
-
-        Vector3 cameraPosition = player.position - cameraRotation * Vector3.forward * distance + Vector3.up * heightOffset;
-
-        transform.position = cameraPosition;
-
-        transform.LookAt(player.position + Vector3.up * heightOffset);
-    }
+		lookAngle += smoothX * targetSpeed;
+		transform.rotation = Quaternion.Euler(0, lookAngle, 0);
+	}
 }
